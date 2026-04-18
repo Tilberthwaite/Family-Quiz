@@ -957,40 +957,55 @@ async function generate() {
 
   const totalQ = numQ + (tb ? 1 : 0);
 
-  const prompt = `You are a quiz master creating a fun, engaging family quiz. Generate exactly ${totalQ} questions as a JSON object.
+  // Random seed injected so the model doesn't cache/repeat the same set
+  const seed = Math.random().toString(36).slice(2, 8).toUpperCase();
 
-Requirements:
-- Themes: ${themes.join(', ')}
-- Difficulty: ${diff}
-- Youngest player age: ${minAge} (ALL questions must be understandable and appropriate for this age — use simple vocabulary)
-- Question style: ${mc ? 'Multiple choice with 4 options' : 'Open answer'}
-${tb ? `- The very last question (number ${totalQ}) must have "tieBreaker": true and be slightly harder` : ''}
-${facts ? '- Include a fun fact for each question (1-2 sentences, surprising and child-friendly)' : ''}
+  const difficultyGuide = {
+    'Easy':   'Questions should be gentle warm-ups — well-known facts most primary school children would know. Still make them interesting, not completely obvious.',
+    'Mixed':  'Roughly one third easy, one third medium, one third genuinely hard. Hard questions should stump most adults. Vary the difficulty unpredictably throughout.',
+    'Hard':   'Most questions should challenge adults. Children may get a few but should find it tough. Require specific knowledge, dates, names, or science facts.',
+    'Expert': 'University-level difficulty. Questions should stump almost everyone. Highly specific facts, obscure history, advanced science, precise statistics. Only a genuine expert should score above 50%.'
+  }[diff] || '';
 
-Return ONLY a JSON object in this exact format, no markdown, no backticks, no extra text:
+  const prompt = `You are a world-class pub quiz master writing for the Sutton Family Quiz. Session ID: ${seed} — use this to generate a COMPLETELY FRESH, UNIQUE set of questions unlike any previous session.
+
+DIFFICULTY: ${diff}
+${difficultyGuide}
+
+THEMES: ${themes.join(', ')}
+Youngest player age: ${minAge} — questions must be UNDERSTANDABLE to this age (simple words, no jargon) but difficulty should still match the setting above. A hard question can still be phrased simply.
+Total questions needed: exactly ${totalQ}
+Question style: ${mc ? 'Multiple choice — 4 options per question' : 'Open answer — one correct short answer'}
+${tb ? `Last question (number ${totalQ}): set "tieBreaker": true, make it the hardest question of the set` : ''}
+${facts ? 'Fun fact: include one after each question — surprising, child-friendly, 1-2 sentences' : ''}
+
+STRICT RULES — violating any of these makes the quiz worthless:
+1. ZERO repeated questions, topics, or answers across the entire set. Every question must be about something genuinely different.
+2. Spread questions evenly across ALL selected themes — do not cluster in one theme.
+3. ${diff === 'Easy' ? 'Keep questions approachable but not insultingly obvious.' : diff === 'Expert' ? 'Be genuinely brutal. Vague or common-knowledge questions are NOT acceptable at Expert level.' : 'Vary difficulty — easy, medium, and hard questions must all appear.'}
+4. Wrong answers must be plausible enough to cause real doubt — not silly distractors.
+5. Avoid questions about: colours of things, counting legs on animals, basic addition, or any question a 5-year-old could answer by guessing.
+6. Use a wide variety of question FORMATS: "Which year...", "Who was the first...", "What is the chemical symbol for...", "In which country...", "How many...", "What does X stand for...", "Which of these is NOT...", etc.
+
+Return ONLY valid JSON — no markdown fences, no backticks, no preamble:
 
 {
   "questions": [
     {
       "num": 1,
-      "theme": "Theme Name",
-      "question": "Question text here?",
+      "theme": "Exact Theme Name",
+      "question": "Question text?",
       ${mc
-        ? '"options": ["A. Option one", "B. Option two", "C. Option three", "D. Option four"],"correct": "A",'
-        : '"answer": "The correct answer",'
+        ? '"options": ["A. First option", "B. Second option", "C. Third option", "D. Fourth option"], "correct": "A",'
+        : '"answer": "Precise correct answer",'
       }
-      "funFact": "${facts ? 'Fun fact text here.' : ''}",
+      "funFact": "${facts ? 'Interesting fact here.' : ''}",
       "tieBreaker": false
     }
   ]
 }
 
-Rules:
-- "correct" must be exactly one letter: A, B, C, or D
-- Spread questions across the chosen themes
-- Wrong answers should be plausible but clearly wrong on reflection
-- Keep language age-appropriate for ${minAge}+
-- Escape any double quotes inside strings with \\"`;
+"correct" must be exactly one of: A B C D — nothing else. Escape internal quotes with \\".`;
 
   try {
     // Wait for puter.js to finish loading
