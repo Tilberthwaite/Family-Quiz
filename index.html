@@ -4,796 +4,237 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SFQG — Sutton Family Quiz Generator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-// Load puter.js dynamically so we can detect failures
-window._puterLoaded = new Promise((resolve, reject) => {
-  const s = document.createElement('script');
-  s.src = 'https://js.puter.com/v2/';
-  s.onload = () => resolve(true);
-  s.onerror = () => reject(new Error('Could not load the AI service (puter.js). Please check your internet connection and refresh.'));
-  document.head.appendChild(s);
-});
-</script>
 <style>
 :root {
-  --bg:        #08120A;
-  --bg2:       #0D1C10;
-  --bg3:       #112016;
-  --card:      #0F1E13;
-  --card2:     #162A1A;
-  --border:    rgba(100,180,120,.15);
-  --border2:   rgba(100,180,120,.28);
-  --forest:    #4BAF72;
-  --forest-d:  #2D7A4A;
-  --forest-l:  #7DD4A0;
-  --ocean:     #2A8FA8;
-  --ocean-l:   #5DC4DC;
-  --gold:      #C8A84B;
-  --gold-l:    #E8CC7A;
-  --text:      #D8E8D2;
-  --text-m:    #8BAA88;
-  --text-f:    #5A7858;
-  --red:       #C0392B;
-  --red-l:     rgba(192,57,43,.18);
-  --green-l:   rgba(75,175,114,.18);
-  --r:         12px;
-  --r-sm:      7px;
-  --r-pill:    100px;
-  --glow:      0 0 20px rgba(75,175,114,.12);
-  --glow-gold: 0 0 24px rgba(200,168,75,.15);
+  --bg:#07110A; --card:#0E1C11; --card2:#132017;
+  --border:rgba(90,170,110,.14); --border2:rgba(90,170,110,.26);
+  --forest:#4BAF72; --forest-d:#2D7A4A; --forest-l:#7DD4A0;
+  --ocean:#2A8FA8; --ocean-l:#5DC4DC;
+  --gold:#C8A84B;
+  --text:#D4E8CE; --text-m:#86A882; --text-f:#526E50;
+  --green-l:rgba(75,175,114,.18); --red-l:rgba(192,57,43,.18);
+  --r:12px; --r-sm:7px; --r-pill:100px;
 }
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.65;overflow-x:hidden;}
 
-body {
-  font-family: 'Nunito', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 15px;
-  line-height: 1.65;
-  overflow-x: hidden;
-}
+/* Forest canvas */
+#fc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
 
-/* ── Fireflies ─────────────────────────────────────── */
-.fireflies {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-.firefly {
-  position: absolute;
-  width: 3px; height: 3px;
-  border-radius: 50%;
-  background: var(--forest-l);
-  box-shadow: 0 0 6px 2px rgba(125,212,160,.6);
-  animation: float var(--dur,8s) ease-in-out var(--del,0s) infinite alternate;
-  opacity: 0;
-}
-@keyframes float {
-  0%   { opacity:0; transform: translate(0,0) scale(.6); }
-  20%  { opacity:.85; }
-  80%  { opacity:.7; }
-  100% { opacity:0; transform: translate(var(--tx,30px), var(--ty,-60px)) scale(1.2); }
-}
+/* Fireflies */
+.ff{position:fixed;border-radius:50%;pointer-events:none;z-index:2;opacity:0;animation:ffa var(--d,8s) ease-in-out var(--dl,0s) infinite alternate;}
+@keyframes ffa{0%{opacity:0;transform:translate(0,0) scale(.5)}25%{opacity:.9}75%{opacity:.6}100%{opacity:0;transform:translate(var(--tx,20px),var(--ty,-50px)) scale(1.3)}}
 
-/* ── Ocean waves (Ponyo) at bottom ─────────────────── */
-.waves-wrap {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 90px;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-.wave {
-  position: absolute;
-  bottom: 0;
-  width: 200%;
-  height: 70px;
-}
-.wave path { fill: var(--ocean); }
-.wave1 { opacity: .13; animation: wave-move 7s linear infinite; }
-.wave2 { opacity: .08; animation: wave-move 10s linear infinite reverse; transform: translateX(-25%); }
-.wave3 { opacity: .06; animation: wave-move 14s linear infinite; transform: translateX(-10%); }
-@keyframes wave-move {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.wave1 { animation: wave-move1 7s linear infinite; }
-.wave2 { animation: wave-move2 10s linear infinite; }
-.wave3 { animation: wave-move3 14s linear infinite; }
-@keyframes wave-move1 { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-@keyframes wave-move2 { from{transform:translateX(-25%)} to{transform:translateX(-75%)} }
-@keyframes wave-move3 { from{transform:translateX(-10%)} to{transform:translateX(-60%)} }
+/* Leaves */
+.lf{position:fixed;border-radius:50% 0 50% 0;pointer-events:none;z-index:2;opacity:0;animation:lfa var(--ld,12s) ease-in var(--ldl,0s) infinite;}
+@keyframes lfa{0%{opacity:0;top:-20px;transform:translateX(0) rotate(0deg)}8%{opacity:.7}92%{opacity:.3}100%{opacity:0;top:105vh;transform:translateX(var(--lx,40px)) rotate(var(--lr,300deg))}}
 
-/* ── Layout ─────────────────────────────────────────── */
-.wrapper {
-  position: relative;
-  z-index: 1;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2.5rem 1.25rem 7rem;
-}
+/* Waves */
+.waves{position:fixed;bottom:0;left:0;right:0;height:80px;pointer-events:none;z-index:2;overflow:hidden;}
+.wv{position:absolute;bottom:0;width:220%;height:65px;}
+.wv path{fill:var(--ocean);}
+.w1{opacity:.11;animation:wa1 8s linear infinite;}
+.w2{opacity:.07;animation:wa2 11s linear infinite;}
+.w3{opacity:.05;animation:wa3 15s linear infinite;}
+@keyframes wa1{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes wa2{from{transform:translateX(-20%)}to{transform:translateX(-70%)}}
+@keyframes wa3{from{transform:translateX(-5%)}to{transform:translateX(-55%)}}
 
-/* ── Header ─────────────────────────────────────────── */
-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  position: relative;
-}
-.sfqg-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  letter-spacing: .18em;
-  padding: 5px 16px;
-  border-radius: var(--r-pill);
-  margin-bottom: 1.25rem;
-  box-shadow: var(--glow-gold);
-}
-.totoro-scene {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 0;
-  margin-bottom: 1rem;
-  height: 90px;
-}
+/* Layout */
+.wrap{position:relative;z-index:10;max-width:760px;margin:0 auto;padding:2.5rem 1.25rem 7rem;}
 
-/* Totoro SVG */
-.totoro-big { width: 72px; flex-shrink: 0; }
-.totoro-small { width: 42px; flex-shrink: 0; margin-bottom: 2px; }
+/* Header */
+header{text-align:center;margin-bottom:2.5rem;}
+.badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:11px;letter-spacing:.18em;padding:5px 16px;border-radius:var(--r-pill);margin-bottom:1.25rem;box-shadow:0 0 20px rgba(200,168,75,.12);}
+.scene{display:flex;align-items:flex-end;justify-content:center;height:96px;margin-bottom:.75rem;}
+h1{font-family:'Cinzel',serif;font-size:clamp(1.4rem,4.5vw,2.5rem);font-weight:600;line-height:1.2;color:var(--forest-l);text-shadow:0 0 28px rgba(75,175,114,.4);margin-bottom:.3rem;}
+h1 span{color:var(--gold);}
+.hsub{font-size:13px;color:var(--text-m);}
+.fishrow{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:.65rem;opacity:.5;}
+.fishrow svg{width:22px;}
+.fishrow svg:nth-child(1){animation:bob 3s ease-in-out infinite;}
+.fishrow svg:nth-child(2){animation:bob 3s ease-in-out .9s infinite;transform:scaleX(-1);}
+.fishrow svg:nth-child(3){animation:bob 3s ease-in-out 1.8s infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 
-header h1 {
-  font-family: 'Cinzel', serif;
-  font-size: clamp(1.5rem, 4.5vw, 2.6rem);
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--forest-l);
-  text-shadow: 0 0 30px rgba(75,175,114,.4);
-  margin-bottom: .3rem;
-}
-header h1 span { color: var(--gold); }
-.header-sub {
-  font-size: 13px;
-  color: var(--text-m);
-  margin-bottom: .4rem;
-}
-.ponyo-fish-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: .6rem;
-  opacity: .55;
-}
-.ponyo-fish-row svg { width: 20px; animation: fish-bob 3s ease-in-out infinite; }
-.ponyo-fish-row svg:nth-child(2) { animation-delay: .8s; transform: scaleX(-1); }
-.ponyo-fish-row svg:nth-child(3) { animation-delay: 1.6s; }
-@keyframes fish-bob {
-  0%,100%{transform:translateY(0)}
-  50%{transform:translateY(-4px)}
-}
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 0 18px rgba(75,175,114,.07);}
+.cl{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.13em;color:var(--text-f);margin-bottom:.9rem;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.cl::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--forest);box-shadow:0 0 8px var(--forest);flex-shrink:0;}
 
-/* ── Cards ──────────────────────────────────────────── */
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
-  box-shadow: var(--glow);
-}
-.card-title {
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  letter-spacing: .14em;
-  color: var(--text-f);
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.card-title::before {
-  content: '';
-  display: block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--forest);
-  box-shadow: 0 0 8px var(--forest);
-  flex-shrink: 0;
-}
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{padding:6px 13px;border-radius:var(--r-pill);border:1px solid var(--border2);background:transparent;font-family:'Nunito',sans-serif;font-size:13px;font-weight:500;color:var(--text-m);cursor:pointer;transition:all .18s;user-select:none;}
+.chip:hover{border-color:var(--forest);color:var(--forest-l);}
+.chip.on{background:var(--green-l);border-color:var(--forest);color:var(--forest-l);font-weight:700;}
 
-/* ── Theme chips ────────────────────────────────────── */
-.chip-grid { display: flex; flex-wrap: wrap; gap: 7px; }
-.chip {
-  padding: 6px 14px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--border2);
-  background: transparent;
-  font-family: 'Nunito', sans-serif;
-  font-size: 13px;
-  color: var(--text-m);
-  cursor: pointer;
-  transition: all .2s;
-  user-select: none;
-  font-weight: 500;
-}
-.chip:hover { border-color: var(--forest); color: var(--forest-l); }
-.chip.active {
-  background: rgba(75,175,114,.18);
-  border-color: var(--forest);
-  color: var(--forest-l);
-  font-weight: 600;
-  box-shadow: 0 0 10px rgba(75,175,114,.12);
-}
+/* Sliders */
+.sls{display:flex;flex-direction:column;gap:13px;}
+.slr{display:grid;grid-template-columns:150px 1fr 56px;align-items:center;gap:12px;}
+.slr label{font-size:13px;color:var(--text-m);}
+input[type=range]{-webkit-appearance:none;appearance:none;height:3px;background:var(--border2);border-radius:var(--r-pill);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--forest);border:2px solid var(--bg);box-shadow:0 0 8px rgba(75,175,114,.5);cursor:pointer;}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--forest);border:2px solid var(--bg);cursor:pointer;}
+.sv{font-family:'Cinzel',serif;font-size:13px;font-weight:600;color:var(--forest-l);text-align:right;}
 
-/* ── Sliders ────────────────────────────────────────── */
-.slider-group { display: flex; flex-direction: column; gap: 14px; }
-.slider-row {
-  display: grid;
-  grid-template-columns: 150px 1fr 56px;
-  align-items: center;
-  gap: 12px;
-}
-.slider-row label { font-size: 13px; color: var(--text-m); }
-input[type="range"] {
-  -webkit-appearance: none; appearance: none;
-  height: 3px;
-  background: var(--border2);
-  border-radius: var(--r-pill);
-  outline: none;
-  cursor: pointer;
-}
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--forest);
-  border: 2px solid var(--bg);
-  box-shadow: 0 0 8px rgba(75,175,114,.5);
-  cursor: pointer;
-}
-input[type="range"]::-moz-range-thumb {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--forest);
-  border: 2px solid var(--bg);
-  box-shadow: 0 0 8px rgba(75,175,114,.5);
-  cursor: pointer;
-}
-.slider-val {
-  font-family: 'Cinzel', serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--forest-l);
-  text-align: right;
-}
+/* Difficulty */
+.dg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.db{padding:10px 8px;border-radius:var(--r-sm);border:1px solid var(--border2);background:transparent;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text-m);cursor:pointer;text-align:center;transition:all .18s;}
+.db:hover{border-color:var(--forest);color:var(--forest-l);}
+.db.on{background:var(--green-l);border-color:var(--forest);color:var(--forest-l);}
 
-/* ── Difficulty ─────────────────────────────────────── */
-.diff-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-.diff-btn {
-  padding: 10px 8px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border2);
-  background: transparent;
-  font-family: 'Nunito', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-m);
-  cursor: pointer;
-  text-align: center;
-  transition: all .2s;
-}
-.diff-btn:hover { border-color: var(--forest); color: var(--forest-l); }
-.diff-btn.active {
-  background: rgba(75,175,114,.18);
-  border-color: var(--forest);
-  color: var(--forest-l);
-  box-shadow: 0 0 12px rgba(75,175,114,.14);
-}
+/* Divider */
+.dv{border:none;border-top:1px solid var(--border);margin:1.25rem 0;}
 
-/* ── Toggles ────────────────────────────────────────── */
-.toggle-list { display: flex; flex-direction: column; }
-.toggle-row {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--border);
-  gap: 1rem;
-}
-.toggle-row:last-child { border-bottom: none; }
-.toggle-text .tl { font-size: 14px; color: var(--text); font-weight: 600; }
-.toggle-text .ts { font-size: 12px; color: var(--text-f); margin-top: 1px; }
+/* Toggles */
+.tlist{display:flex;flex-direction:column;}
+.trow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:1rem;}
+.trow:last-child{border-bottom:none;}
+.trow .tl{font-size:14px;font-weight:600;color:var(--text);}
+.trow .ts{font-size:12px;color:var(--text-f);margin-top:1px;}
+.sw{position:relative;width:44px;height:24px;flex-shrink:0;}
+.sw input{opacity:0;width:0;height:0;}
+.sw .tr{position:absolute;inset:0;background:var(--border2);border-radius:12px;cursor:pointer;transition:background .22s;border:1px solid var(--border2);}
+.sw .tr::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--text-f);border-radius:50%;transition:transform .22s,background .22s;}
+.sw input:checked+.tr{background:rgba(75,175,114,.22);border-color:var(--forest);}
+.sw input:checked+.tr::before{transform:translateX(20px);background:var(--forest);box-shadow:0 0 8px rgba(75,175,114,.45);}
 
-.switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-.switch input { opacity:0; width:0; height:0; }
-.track {
-  position: absolute; inset: 0;
-  background: var(--border2);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background .25s;
-  border: 1px solid var(--border2);
-}
-.track::before {
-  content: '';
-  position: absolute;
-  width: 18px; height: 18px;
-  left: 2px; top: 2px;
-  background: var(--text-f);
-  border-radius: 50%;
-  transition: transform .25s, background .25s;
-}
-.switch input:checked + .track { background: rgba(75,175,114,.25); border-color: var(--forest); }
-.switch input:checked + .track::before { transform: translateX(20px); background: var(--forest); box-shadow: 0 0 8px rgba(75,175,114,.5); }
+/* Generate button */
+.gbtn{width:100%;padding:16px;background:linear-gradient(135deg,#245C35 0%,#1A4828 100%);color:var(--forest-l);border:1px solid var(--forest);border-radius:var(--r);font-family:'Cinzel',serif;font-size:17px;font-weight:600;letter-spacing:.05em;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 0 20px rgba(75,175,114,.1),inset 0 1px 0 rgba(125,212,160,.1);}
+.gbtn:hover:not(:disabled){background:linear-gradient(135deg,#2D7A4A 0%,#216038 100%);color:#fff;box-shadow:0 0 32px rgba(75,175,114,.2);}
+.gbtn:active:not(:disabled){transform:scale(.99);}
+.gbtn:disabled{opacity:.45;cursor:not-allowed;}
+.gbtn svg{width:20px;height:20px;flex-shrink:0;}
 
-/* ── Divider ─────────────────────────────────────────── */
-.divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+/* Loading bar */
+.lbar{width:100%;height:2px;background:var(--border);border-radius:var(--r-pill);overflow:hidden;margin-top:.9rem;display:none;}
+.lbar.on{display:block;}
+.lfil{height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg,var(--forest-d),var(--forest-l),var(--ocean-l),var(--forest-l),var(--forest-d));background-size:300% 100%;animation:lani 2s ease-in-out infinite;}
+@keyframes lani{0%{background-position:100% 0}100%{background-position:-100% 0}}
 
-/* ── Generate button ────────────────────────────────── */
-.generate-btn {
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, var(--forest-d) 0%, #1A5C35 100%);
-  color: var(--forest-l);
-  border: 1px solid var(--forest);
-  border-radius: var(--r);
-  font-family: 'Cinzel', serif;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: .05em;
-  cursor: pointer;
-  transition: all .25s;
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-  box-shadow: var(--glow), inset 0 1px 0 rgba(125,212,160,.1);
-}
-.generate-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2D7A4A 0%, #1E6B3D 100%);
-  box-shadow: 0 0 30px rgba(75,175,114,.22);
-  color: #fff;
-}
-.generate-btn:active:not(:disabled) { transform: scale(.99); }
-.generate-btn:disabled { opacity: .45; cursor: not-allowed; }
-.btn-icon { width: 20px; height: 20px; flex-shrink: 0; }
+/* Quiz output */
+.qout{margin-top:1.5rem;}
+.qhdr{background:linear-gradient(135deg,#091C0D 0%,#0A1E2A 100%);border:1px solid var(--border2);border-radius:var(--r);padding:1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;box-shadow:0 0 18px rgba(75,175,114,.07);}
+.qtit{font-family:'Cinzel',serif;font-size:18px;color:var(--forest-l);text-shadow:0 0 18px rgba(75,175,114,.3);}
+.qmeta{font-size:12px;color:var(--text-f);margin-top:3px;}
+.scbox{background:rgba(75,175,114,.1);border:1px solid rgba(75,175,114,.22);border-radius:var(--r-sm);padding:8px 18px;text-align:center;}
+.scn{font-family:'Cinzel',serif;font-size:22px;font-weight:600;color:var(--forest-l);line-height:1;}
+.scl{font-size:10px;color:var(--text-f);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:.75rem;transition:border-color .2s;}
+.qcard:hover{border-color:var(--border2);}
+.qm{display:flex;align-items:center;gap:8px;margin-bottom:.75rem;}
+.qnb{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(75,175,114,.15);border:1px solid var(--forest);color:var(--forest-l);font-family:'Cinzel',serif;font-size:11px;font-weight:600;flex-shrink:0;}
+.qth{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-f);font-family:'Cinzel',serif;}
+.tbadge{font-size:11px;font-weight:700;background:rgba(200,168,75,.13);color:var(--gold);border:1px solid rgba(200,168,75,.28);padding:2px 9px;border-radius:var(--r-pill);}
+.qtxt{font-size:16px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:1rem;}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.abtn{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--card2);font-family:'Nunito',sans-serif;font-size:13px;font-weight:500;color:var(--text-m);cursor:pointer;text-align:left;transition:all .18s;line-height:1.4;}
+.abtn:hover:not(:disabled){border-color:var(--forest);background:rgba(75,175,114,.1);color:var(--forest-l);}
+.abtn:disabled{cursor:default;}
+.abtn .lt{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);font-size:11px;font-weight:700;flex-shrink:0;transition:all .18s;}
+.abtn.corr{background:var(--green-l);border-color:var(--forest);color:var(--forest-l);}
+.abtn.corr .lt{background:var(--forest);border-color:var(--forest);color:#fff;}
+.abtn.wrng{background:var(--red-l);border-color:#C0392B;color:#E87D7D;}
+.abtn.wrng .lt{background:#C0392B;border-color:#C0392B;color:#fff;}
+.oabtn{width:100%;padding:11px 16px;border-radius:var(--r-sm);border:1px dashed var(--border2);background:transparent;font-family:'Nunito',sans-serif;font-size:14px;font-weight:500;color:var(--text-f);cursor:pointer;text-align:center;transition:all .18s;}
+.oabtn:hover{border-color:var(--forest);color:var(--forest-l);background:rgba(75,175,114,.07);}
+.oarev{padding:11px 16px;border-radius:var(--r-sm);border:1px solid var(--forest);background:var(--green-l);color:var(--forest-l);font-size:14px;font-weight:700;}
+.ffact{display:none;margin-top:.9rem;padding:.75rem 1rem;border-radius:var(--r-sm);background:rgba(42,143,168,.1);border-left:2px solid var(--ocean);font-size:13px;color:var(--ocean-l);line-height:1.55;}
+.ffact strong{font-weight:700;display:block;margin-bottom:2px;}
+.ffact.on{display:block;}
+.rbtn{width:100%;padding:12px;background:transparent;border:1px solid var(--border2);border-radius:var(--r);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text-f);cursor:pointer;transition:all .18s;margin-top:.75rem;}
+.rbtn:hover{border-color:var(--forest);color:var(--forest-l);}
 
-/* ── Loading ─────────────────────────────────────────── */
-.loading-bar {
-  width: 100%; height: 2px;
-  background: var(--border);
-  border-radius: var(--r-pill);
-  overflow: hidden;
-  margin-top: .9rem;
-  display: none;
-}
-.loading-bar.active { display: block; }
-.loading-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--forest-d), var(--forest-l), var(--ocean-l));
-  border-radius: var(--r-pill);
-  animation: shimmer 1.8s ease-in-out infinite;
-  background-size: 200% 100%;
-}
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* ── Quiz output ─────────────────────────────────────── */
-.quiz-output { margin-top: 1.5rem; }
-
-.quiz-header {
-  background: linear-gradient(135deg, #0A1F2E 0%, #0D2A1A 100%);
-  border: 1px solid var(--border2);
-  border-radius: var(--r);
-  padding: 1.5rem;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1rem;
-  flex-wrap: wrap; gap: .75rem;
-  box-shadow: var(--glow);
-}
-.quiz-title {
-  font-family: 'Cinzel', serif;
-  font-size: 18px;
-  color: var(--forest-l);
-  text-shadow: 0 0 20px rgba(75,175,114,.3);
-}
-.quiz-meta { font-size: 12px; color: var(--text-f); margin-top: 3px; }
-.score-display {
-  background: rgba(75,175,114,.1);
-  border: 1px solid rgba(75,175,114,.25);
-  border-radius: var(--r-sm);
-  padding: 8px 18px;
-  text-align: center;
-}
-.score-display .s-num {
-  font-family: 'Cinzel', serif;
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--forest-l);
-  line-height: 1;
-}
-.score-display .s-label {
-  font-size: 10px;
-  color: var(--text-f);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin-top: 2px;
-}
-
-.q-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: .75rem;
-  transition: border-color .2s, box-shadow .2s;
-}
-.q-card:hover { border-color: var(--border2); }
-.q-card.answered { border-color: rgba(75,175,114,.22); }
-
-.q-meta {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: .75rem;
-}
-.q-num-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: rgba(75,175,114,.18);
-  border: 1px solid var(--forest);
-  color: var(--forest-l);
-  font-family: 'Cinzel', serif;
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-.q-theme-badge {
-  font-size: 11px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--text-f);
-  font-family: 'Cinzel', serif;
-}
-.tb-badge {
-  font-size: 11px;
-  font-weight: 700;
-  background: rgba(200,168,75,.15);
-  color: var(--gold);
-  border: 1px solid rgba(200,168,75,.3);
-  padding: 2px 9px;
-  border-radius: var(--r-pill);
-}
-
-.q-text {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.5;
-  margin-bottom: 1rem;
-}
-
-.answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-@media(max-width:480px){ .answers-grid{grid-template-columns:1fr} .slider-row{grid-template-columns:120px 1fr 48px} .diff-grid{grid-template-columns:repeat(2,1fr)} }
-
-.ans-btn {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 13px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border2);
-  background: var(--bg3);
-  font-family: 'Nunito', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-m);
-  cursor: pointer;
-  text-align: left;
-  transition: all .18s;
-  line-height: 1.4;
-}
-.ans-btn:hover:not(:disabled) {
-  border-color: var(--forest);
-  background: rgba(75,175,114,.1);
-  color: var(--forest-l);
-}
-.ans-btn:disabled { cursor: default; }
-.ans-btn .letter {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--border2);
-  font-size: 11px; font-weight: 700;
-  flex-shrink: 0;
-  transition: all .18s;
-}
-.ans-btn.reveal-correct {
-  background: var(--green-l);
-  border-color: var(--forest);
-  color: var(--forest-l);
-}
-.ans-btn.reveal-correct .letter { background: var(--forest); border-color: var(--forest); color: #fff; }
-.ans-btn.wrong {
-  background: var(--red-l);
-  border-color: var(--red);
-  color: #E87D7D;
-}
-.ans-btn.wrong .letter { background: var(--red); border-color: var(--red); color: #fff; }
-
-.open-answer-btn {
-  width: 100%; padding: 11px 16px;
-  border-radius: var(--r-sm);
-  border: 1px dashed var(--border2);
-  background: transparent;
-  font-family: 'Nunito', sans-serif;
-  font-size: 14px; font-weight: 500;
-  color: var(--text-f);
-  cursor: pointer; text-align: center;
-  transition: all .18s;
-}
-.open-answer-btn:hover { border-color: var(--forest); color: var(--forest-l); background: rgba(75,175,114,.07); }
-.open-answer-revealed {
-  padding: 11px 16px; border-radius: var(--r-sm);
-  border: 1px solid var(--forest);
-  background: var(--green-l);
-  color: var(--forest-l);
-  font-size: 14px; font-weight: 700;
-}
-
-.fun-fact {
-  display: none;
-  margin-top: .9rem;
-  padding: .75rem 1rem;
-  border-radius: var(--r-sm);
-  background: rgba(42,143,168,.1);
-  border-left: 2px solid var(--ocean);
-  font-size: 13px;
-  color: var(--ocean-l);
-  line-height: 1.55;
-}
-.fun-fact strong { font-weight: 700; display: block; margin-bottom: 2px; color: var(--ocean-l); }
-.fun-fact.visible { display: block; }
+/* Totoro reveal */
+.trev{text-align:center;padding:2rem 0 1rem;display:none;}
+.trev.on{display:block;}
+.trlbl{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-f);margin-bottom:1.25rem;transition:color .6s;}
+.trlbl.done{color:var(--forest-l);}
+.tp{opacity:0;transition:opacity .8s ease,transform .8s ease;transform:translateY(8px);}
+.tp.on{opacity:1;transform:translateY(0);}
+@keyframes tgl{0%,100%{filter:drop-shadow(0 0 4px rgba(75,175,114,.25))}50%{filter:drop-shadow(0 0 16px rgba(75,175,114,.65))}}
+.tglowing{animation:tgl 2.2s ease-in-out infinite;}
 
 /* Final score */
-.final-score-card {
-  background: linear-gradient(135deg, #0A2010 0%, #0A1F2E 100%);
-  border: 1px solid var(--forest);
-  border-radius: var(--r);
-  padding: 2.5rem;
-  text-align: center;
-  margin-top: 1rem;
-  box-shadow: 0 0 40px rgba(75,175,114,.12);
-}
-.final-score-card h3 {
-  font-family: 'Cinzel', serif;
-  font-size: 22px;
-  color: var(--forest-l);
-  margin-bottom: .5rem;
-}
-.final-score-card .big-score {
-  font-family: 'Cinzel', serif;
-  font-size: 72px;
-  font-weight: 600;
-  color: var(--gold);
-  line-height: 1;
-  text-shadow: var(--glow-gold);
-  margin: .5rem 0;
-}
-.final-score-card .result-msg { color: var(--text-m); font-size: 15px; margin-top: .5rem; }
+.fsc{background:linear-gradient(135deg,#0A1F0E 0%,#0A1C28 100%);border:1px solid var(--forest);border-radius:var(--r);padding:2.5rem;text-align:center;margin-top:1rem;box-shadow:0 0 40px rgba(75,175,114,.1);}
+.fsc h3{font-family:'Cinzel',serif;font-size:22px;color:var(--forest-l);margin-bottom:.5rem;}
+.bsc{font-family:'Cinzel',serif;font-size:72px;font-weight:600;color:var(--gold);line-height:1;margin:.5rem 0;text-shadow:0 0 24px rgba(200,168,75,.3);}
+.fmsg{color:var(--text-m);font-size:15px;margin-top:.5rem;}
 
-.error-msg {
-  background: rgba(192,57,43,.1);
-  border: 1px solid rgba(192,57,43,.4);
-  border-radius: var(--r-sm);
-  padding: 1rem 1.25rem;
-  color: #E87D7D;
-  font-size: 14px;
-  margin-top: 1rem;
-  line-height: 1.5;
-}
+/* Error */
+.err{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.35);border-radius:var(--r-sm);padding:1rem 1.25rem;color:#E87D7D;font-size:14px;margin-top:1rem;line-height:1.6;}
 
-.regen-btn {
-  width: 100%; padding: 12px;
-  background: transparent;
-  border: 1px solid var(--border2);
-  border-radius: var(--r);
-  font-family: 'Nunito', sans-serif;
-  font-size: 14px; font-weight: 600;
-  color: var(--text-f);
-  cursor: pointer;
-  transition: all .2s;
-  margin-top: .75rem;
-}
-.regen-btn:hover { border-color: var(--forest); color: var(--forest-l); }
+/* Footer */
+footer{text-align:center;margin-top:3rem;font-family:'Cinzel',serif;font-size:12px;letter-spacing:.06em;color:var(--text-f);}
 
-/* ── Footer ──────────────────────────────────────────── */
-footer {
-  text-align: center;
-  margin-top: 3rem;
-  font-size: 12px;
-  color: var(--text-f);
-  font-family: 'Cinzel', serif;
-  letter-spacing: .06em;
-}
-footer a { color: var(--text-f); text-decoration: none; }
-
-/* Soot sprites */
-.soot {
-  display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #1A2A1A;
-  border: 1px solid #2A3A2A;
-  margin: 0 3px;
-  position: relative;
-}
-.soot::before,.soot::after {
-  content:'';
-  position: absolute;
-  background: var(--text-f);
-  border-radius: 50%;
-}
-.soot::before { width:2px;height:2px; top:2px; left:1px; }
-.soot::after  { width:2px;height:2px; top:2px; right:1px; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
+/* Responsive */
+@media(max-width:500px){.agrid{grid-template-columns:1fr}.slr{grid-template-columns:110px 1fr 44px}.dg{grid-template-columns:repeat(2,1fr)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- Fireflies -->
-<div class="fireflies" id="fireflies"></div>
+<canvas id="fc"></canvas>
 
-<!-- Ocean waves (Ponyo) -->
-<div class="waves-wrap">
-  <svg class="wave wave1" viewBox="0 0 1440 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0,35 C180,10 360,60 540,35 C720,10 900,60 1080,35 C1260,10 1380,55 1440,35 L1440,70 L0,70 Z"/>
-  </svg>
-  <svg class="wave wave2" viewBox="0 0 1440 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0,40 C200,15 400,65 600,40 C800,15 1000,65 1200,40 C1350,20 1420,50 1440,40 L1440,70 L0,70 Z"/>
-  </svg>
-  <svg class="wave wave3" viewBox="0 0 1440 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0,45 C160,20 340,68 520,45 C700,22 880,65 1060,45 C1240,25 1380,58 1440,45 L1440,70 L0,70 Z"/>
-  </svg>
+<div class="waves">
+  <svg class="wv w1" viewBox="0 0 1440 65" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,32C180,8 360,56 540,32 720,8 900,56 1080,32 1260,8 1380,50 1440,32L1440,65 0,65Z"/></svg>
+  <svg class="wv w2" viewBox="0 0 1440 65" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,38C200,14 400,62 600,38 800,14 1000,62 1200,38 1360,18 1420,48 1440,38L1440,65 0,65Z"/></svg>
+  <svg class="wv w3" viewBox="0 0 1440 65" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,44C160,18 340,64 520,44 700,24 880,62 1060,44 1240,26 1380,56 1440,44L1440,65 0,65Z"/></svg>
 </div>
 
-<div class="wrapper">
-
-  <!-- Header -->
+<div class="wrap">
   <header>
-    <div class="sfqg-badge">✦ SFQG ✦</div>
-
-    <!-- Totoro scene -->
-    <div class="totoro-scene">
-      <!-- Small Totoro (Chibi) -->
-      <svg class="totoro-small" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="40" cy="62" rx="26" ry="30" fill="#9EC8A0" opacity=".85"/>
-        <ellipse cx="40" cy="56" rx="20" ry="22" fill="#B8D8BA"/>
-        <!-- Ears -->
-        <ellipse cx="26" cy="35" rx="7" ry="12" fill="#9EC8A0" transform="rotate(-15 26 35)" opacity=".9"/>
-        <ellipse cx="54" cy="35" rx="7" ry="12" fill="#9EC8A0" transform="rotate(15 54 35)" opacity=".9"/>
-        <!-- Eye whites -->
-        <ellipse cx="32" cy="52" rx="6" ry="7" fill="#E8F4E8"/>
-        <ellipse cx="48" cy="52" rx="6" ry="7" fill="#E8F4E8"/>
-        <!-- Pupils -->
-        <ellipse cx="33" cy="53" rx="3.5" ry="4" fill="#1A2A1A"/>
-        <ellipse cx="49" cy="53" rx="3.5" ry="4" fill="#1A2A1A"/>
-        <!-- Shine -->
-        <circle cx="34" cy="51" r="1.2" fill="#fff"/>
-        <circle cx="50" cy="51" r="1.2" fill="#fff"/>
-        <!-- Nose -->
-        <ellipse cx="40" cy="59" rx="2" ry="1.2" fill="#6A9A6A"/>
-        <!-- Belly markings -->
-        <ellipse cx="40" cy="70" rx="12" ry="14" fill="rgba(200,230,200,.4)"/>
-        <!-- Whiskers -->
-        <line x1="18" y1="58" x2="30" y2="60" stroke="#6A9A6A" stroke-width="1" opacity=".6"/>
-        <line x1="18" y1="62" x2="30" y2="62" stroke="#6A9A6A" stroke-width="1" opacity=".6"/>
-        <line x1="50" y1="60" x2="62" y2="58" stroke="#6A9A6A" stroke-width="1" opacity=".6"/>
-        <line x1="50" y1="62" x2="62" y2="62" stroke="#6A9A6A" stroke-width="1" opacity=".6"/>
+    <div class="badge">✦ SFQG ✦</div>
+    <!-- Totoro trio -->
+    <div class="scene">
+      <svg width="36" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:10px;opacity:.65">
+        <ellipse cx="40" cy="65" rx="18" ry="22" fill="#B8CEB8"/><ellipse cx="40" cy="58" rx="13" ry="16" fill="#CCDACC"/>
+        <ellipse cx="31" cy="44" rx="5" ry="9" fill="#B8CEB8" transform="rotate(-12 31 44)"/><ellipse cx="49" cy="44" rx="5" ry="9" fill="#B8CEB8" transform="rotate(12 49 44)"/>
+        <ellipse cx="35" cy="56" rx="4" ry="5" fill="#E2EEE2"/><ellipse cx="45" cy="56" rx="4" ry="5" fill="#E2EEE2"/>
+        <ellipse cx="36" cy="57" rx="2.2" ry="2.8" fill="#1A2A1A"/><ellipse cx="46" cy="57" rx="2.2" ry="2.8" fill="#1A2A1A"/>
+        <circle cx="36.8" cy="55.8" r=".8" fill="#fff"/><circle cx="46.8" cy="55.8" r=".8" fill="#fff"/>
       </svg>
-
-      <!-- Big Totoro -->
-      <svg class="totoro-big" viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
-        <ellipse cx="60" cy="95" rx="44" ry="48" fill="#6A9A6A" opacity=".9"/>
-        <ellipse cx="60" cy="85" rx="36" ry="40" fill="#8ABB8A"/>
-        <!-- Ears -->
-        <ellipse cx="36" cy="42" rx="11" ry="20" fill="#6A9A6A" transform="rotate(-12 36 42)" opacity=".9"/>
-        <ellipse cx="84" cy="42" rx="11" ry="20" fill="#6A9A6A" transform="rotate(12 84 42)" opacity=".9"/>
-        <!-- Ear inner -->
-        <ellipse cx="36" cy="44" rx="5" ry="12" fill="#9ABA9A" transform="rotate(-12 36 44)" opacity=".6"/>
-        <ellipse cx="84" cy="44" rx="5" ry="12" fill="#9ABA9A" transform="rotate(12 84 44)" opacity=".6"/>
-        <!-- Eye whites -->
-        <ellipse cx="45" cy="78" rx="10" ry="11" fill="#E8F4E8"/>
-        <ellipse cx="75" cy="78" rx="10" ry="11" fill="#E8F4E8"/>
-        <!-- Pupils -->
-        <ellipse cx="46.5" cy="79" rx="6" ry="7" fill="#1A2A1A"/>
-        <ellipse cx="76.5" cy="79" rx="6" ry="7" fill="#1A2A1A"/>
-        <!-- Shine -->
-        <circle cx="48" cy="76" r="2" fill="#fff"/>
-        <circle cx="78" cy="76" r="2" fill="#fff"/>
-        <!-- Nose -->
-        <ellipse cx="60" cy="88" rx="3.5" ry="2" fill="#4A7A4A"/>
-        <!-- Smile -->
-        <path d="M50 94 Q60 100 70 94" stroke="#4A7A4A" stroke-width="1.5" fill="none"/>
-        <!-- Belly -->
-        <ellipse cx="60" cy="110" rx="22" ry="26" fill="rgba(210,235,210,.35)"/>
-        <!-- Belly markings -->
-        <ellipse cx="55" cy="108" rx="4" ry="5" fill="rgba(80,120,80,.25)"/>
-        <ellipse cx="65" cy="108" rx="4" ry="5" fill="rgba(80,120,80,.25)"/>
-        <ellipse cx="60" cy="118" rx="3" ry="4" fill="rgba(80,120,80,.2)"/>
-        <!-- Whiskers -->
-        <line x1="20" y1="84" x2="42" y2="88" stroke="#4A7A4A" stroke-width="1.2" opacity=".5"/>
-        <line x1="18" y1="91" x2="42" y2="91" stroke="#4A7A4A" stroke-width="1.2" opacity=".5"/>
-        <line x1="78" y1="88" x2="100" y2="84" stroke="#4A7A4A" stroke-width="1.2" opacity=".5"/>
-        <line x1="78" y1="91" x2="102" y2="91" stroke="#4A7A4A" stroke-width="1.2" opacity=".5"/>
-        <!-- Claws -->
-        <path d="M30 130 Q34 138 38 130" stroke="#4A7A4A" stroke-width="1.5" fill="none" opacity=".5"/>
-        <path d="M80 130 Q84 138 88 130" stroke="#4A7A4A" stroke-width="1.5" fill="none" opacity=".5"/>
+      <svg width="82" viewBox="0 0 120 155" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="60" cy="98" rx="46" ry="50" fill="#5A8A5A"/><ellipse cx="60" cy="88" rx="38" ry="42" fill="#7AAA7A"/>
+        <ellipse cx="36" cy="44" rx="12" ry="22" fill="#5A8A5A" transform="rotate(-12 36 44)"/><ellipse cx="84" cy="44" rx="12" ry="22" fill="#5A8A5A" transform="rotate(12 84 44)"/>
+        <ellipse cx="36" cy="46" rx="6" ry="13" fill="#7AAA7A" transform="rotate(-12 36 46)" opacity=".55"/><ellipse cx="84" cy="46" rx="6" ry="13" fill="#7AAA7A" transform="rotate(12 84 46)" opacity=".55"/>
+        <ellipse cx="44" cy="80" rx="11" ry="12" fill="#E0EEE0"/><ellipse cx="76" cy="80" rx="11" ry="12" fill="#E0EEE0"/>
+        <ellipse cx="45.5" cy="81" rx="6.5" ry="7.5" fill="#1A2A1A"/><ellipse cx="77.5" cy="81" rx="6.5" ry="7.5" fill="#1A2A1A"/>
+        <circle cx="47" cy="78" r="2.2" fill="#fff"/><circle cx="79" cy="78" r="2.2" fill="#fff"/>
+        <ellipse cx="60" cy="91" rx="3.5" ry="2.2" fill="#3A6A3A"/>
+        <path d="M50 97Q60 103 70 97" stroke="#3A6A3A" stroke-width="1.5" fill="none"/>
+        <ellipse cx="60" cy="113" rx="22" ry="28" fill="rgba(200,225,200,.3)"/>
+        <ellipse cx="55" cy="110" rx="4" ry="5" fill="rgba(60,100,60,.22)"/><ellipse cx="65" cy="110" rx="4" ry="5" fill="rgba(60,100,60,.22)"/>
+        <line x1="18" y1="86" x2="42" y2="90" stroke="#3A6A3A" stroke-width="1.2" opacity=".5"/><line x1="16" y1="93" x2="42" y2="93" stroke="#3A6A3A" stroke-width="1.2" opacity=".5"/>
+        <line x1="78" y1="90" x2="102" y2="86" stroke="#3A6A3A" stroke-width="1.2" opacity=".5"/><line x1="78" y1="93" x2="104" y2="93" stroke="#3A6A3A" stroke-width="1.2" opacity=".5"/>
       </svg>
-
-      <!-- Another small Totoro (the white one) -->
-      <svg class="totoro-small" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px;opacity:.7">
-        <ellipse cx="40" cy="65" rx="18" ry="22" fill="#C8DCC8" opacity=".8"/>
-        <ellipse cx="40" cy="58" rx="14" ry="16" fill="#D8ECD8"/>
-        <ellipse cx="30" cy="42" rx="5" ry="9" fill="#C8DCC8" transform="rotate(-12 30 42)" opacity=".85"/>
-        <ellipse cx="50" cy="42" rx="5" ry="9" fill="#C8DCC8" transform="rotate(12 50 42)" opacity=".85"/>
-        <ellipse cx="35" cy="56" rx="4.5" ry="5" fill="#E8F4E8"/>
-        <ellipse cx="45" cy="56" rx="4.5" ry="5" fill="#E8F4E8"/>
-        <ellipse cx="36" cy="57" rx="2.5" ry="3" fill="#1A2A1A"/>
-        <ellipse cx="46" cy="57" rx="2.5" ry="3" fill="#1A2A1A"/>
-        <circle cx="37" cy="55.5" r=".9" fill="#fff"/>
-        <circle cx="47" cy="55.5" r=".9" fill="#fff"/>
-        <ellipse cx="40" cy="63" rx="1.5" ry="1" fill="#8AAA8A"/>
+      <svg width="46" viewBox="0 0 80 105" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:3px;opacity:.8">
+        <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7A9A7A"/><ellipse cx="40" cy="60" rx="18" ry="21" fill="#9ABA9A"/>
+        <ellipse cx="27" cy="40" rx="7" ry="13" fill="#7A9A7A" transform="rotate(-14 27 40)"/><ellipse cx="53" cy="40" rx="7" ry="13" fill="#7A9A7A" transform="rotate(14 53 40)"/>
+        <ellipse cx="33" cy="58" rx="5.5" ry="6.5" fill="#E0EEE0"/><ellipse cx="47" cy="58" rx="5.5" ry="6.5" fill="#E0EEE0"/>
+        <ellipse cx="34" cy="59" rx="3" ry="3.5" fill="#1A2A1A"/><ellipse cx="48" cy="59" rx="3" ry="3.5" fill="#1A2A1A"/>
+        <circle cx="35" cy="57" r="1.1" fill="#fff"/><circle cx="49" cy="57" r="1.1" fill="#fff"/>
+        <line x1="17" y1="63" x2="31" y2="66" stroke="#5A7A5A" stroke-width="1" opacity=".5"/><line x1="15" y1="68" x2="31" y2="68" stroke="#5A7A5A" stroke-width="1" opacity=".5"/>
+        <line x1="49" y1="66" x2="63" y2="63" stroke="#5A7A5A" stroke-width="1" opacity=".5"/><line x1="49" y1="68" x2="65" y2="68" stroke="#5A7A5A" stroke-width="1" opacity=".5"/>
       </svg>
     </div>
-
     <h1>Sutton Family <span>Quiz</span> Generator</h1>
-    <p class="header-sub">A magical quiz adventure for the whole family</p>
-
-    <!-- Ponyo fish -->
-    <div class="ponyo-fish-row">
-      <svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg" fill="none">
-        <ellipse cx="18" cy="12" rx="14" ry="8" fill="#E85D7A" opacity=".8"/>
-        <path d="M30 12 L40 6 L40 18 Z" fill="#E85D7A" opacity=".6"/>
-        <circle cx="10" cy="10" r="2.5" fill="#fff" opacity=".9"/>
-        <circle cx="10.8" cy="10.2" r="1.2" fill="#1A0A0A"/>
-        <ellipse cx="18" cy="16" rx="8" ry="2" fill="#C84060" opacity=".3"/>
-      </svg>
-      <svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg" fill="none">
-        <ellipse cx="22" cy="12" rx="14" ry="8" fill="#5B8DE8" opacity=".75"/>
-        <path d="M10 12 L0 6 L0 18 Z" fill="#5B8DE8" opacity=".6"/>
-        <circle cx="30" cy="10" r="2.5" fill="#fff" opacity=".9"/>
-        <circle cx="30.8" cy="10.2" r="1.2" fill="#0A0A1A"/>
-        <ellipse cx="22" cy="16" rx="8" ry="2" fill="#3060B0" opacity=".3"/>
-      </svg>
-      <svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg" fill="none">
-        <ellipse cx="18" cy="12" rx="14" ry="8" fill="#E8C84A" opacity=".7"/>
-        <path d="M30 12 L40 6 L40 18 Z" fill="#E8C84A" opacity=".55"/>
-        <circle cx="10" cy="10" r="2.5" fill="#fff" opacity=".9"/>
-        <circle cx="10.8" cy="10.2" r="1.2" fill="#1A1000"/>
-        <ellipse cx="18" cy="16" rx="8" ry="2" fill="#B09020" opacity=".3"/>
-      </svg>
+    <p class="hsub">A magical quiz adventure for the whole family</p>
+    <div class="fishrow">
+      <svg viewBox="0 0 42 26" xmlns="http://www.w3.org/2000/svg" fill="none"><ellipse cx="19" cy="13" rx="15" ry="9" fill="#E85D7A" opacity=".8"/><path d="M32 13L42 7 42 19Z" fill="#E85D7A" opacity=".6"/><circle cx="10" cy="11" r="2.8" fill="#fff" opacity=".9"/><circle cx="11" cy="11.3" r="1.3" fill="#1A0810"/></svg>
+      <svg viewBox="0 0 42 26" xmlns="http://www.w3.org/2000/svg" fill="none"><ellipse cx="23" cy="13" rx="15" ry="9" fill="#5B8DE8" opacity=".75"/><path d="M10 13L0 7 0 19Z" fill="#5B8DE8" opacity=".6"/><circle cx="32" cy="11" r="2.8" fill="#fff" opacity=".9"/><circle cx="33" cy="11.3" r="1.3" fill="#08081A"/></svg>
+      <svg viewBox="0 0 42 26" xmlns="http://www.w3.org/2000/svg" fill="none"><ellipse cx="19" cy="13" rx="15" ry="9" fill="#E8C84A" opacity=".7"/><path d="M32 13L42 7 42 19Z" fill="#E8C84A" opacity=".55"/><circle cx="10" cy="11" r="2.8" fill="#fff" opacity=".9"/><circle cx="11" cy="11.3" r="1.3" fill="#181000"/></svg>
     </div>
   </header>
 
-  <!-- ── Config Card ── -->
   <div class="card">
-
     <div style="margin-bottom:1.5rem">
-      <div class="card-title">Themes — choose your adventure</div>
-      <div class="chip-grid" id="themes">
-        <span class="chip active" data-val="General Knowledge">General knowledge</span>
-        <span class="chip active" data-val="Science &amp; Nature">Science &amp; nature</span>
-        <span class="chip active" data-val="History">History</span>
+      <div class="cl">Themes — choose your adventure</div>
+      <div class="chips" id="themes">
+        <span class="chip on" data-val="General Knowledge">General knowledge</span>
+        <span class="chip on" data-val="Science &amp; Nature">Science &amp; nature</span>
+        <span class="chip on" data-val="History">History</span>
         <span class="chip" data-val="Geography">Geography</span>
         <span class="chip" data-val="Sport">Sport</span>
         <span class="chip" data-val="Music">Music</span>
@@ -805,354 +246,284 @@ footer a { color: var(--text-f); text-decoration: none; }
         <span class="chip" data-val="Art &amp; Literature">Art &amp; literature</span>
       </div>
     </div>
-
-    <hr class="divider">
-
+    <hr class="dv">
     <div style="margin-bottom:1.5rem">
-      <div class="card-title">Players &amp; length</div>
-      <div class="slider-group">
-        <div class="slider-row">
-          <label>Youngest player</label>
-          <input type="range" min="4" max="17" step="1" value="6" id="minAge"
-            oninput="document.getElementById('minAgeV').textContent=this.value+' yrs'">
-          <span class="slider-val" id="minAgeV">6 yrs</span>
-        </div>
-        <div class="slider-row">
-          <label>Number of questions</label>
-          <input type="range" min="5" max="30" step="5" value="10" id="numQ"
-            oninput="document.getElementById('numQV').textContent=this.value">
-          <span class="slider-val" id="numQV">10</span>
-        </div>
+      <div class="cl">Players &amp; length</div>
+      <div class="sls">
+        <div class="slr"><label>Youngest player</label><input type="range" min="4" max="17" step="1" value="6" id="minAge" oninput="document.getElementById('minAgeV').textContent=this.value+' yrs'"><span class="sv" id="minAgeV">6 yrs</span></div>
+        <div class="slr"><label>Questions</label><input type="range" min="5" max="30" step="5" value="10" id="numQ" oninput="document.getElementById('numQV').textContent=this.value"><span class="sv" id="numQV">10</span></div>
       </div>
     </div>
-
-    <hr class="divider">
-
+    <hr class="dv">
     <div style="margin-bottom:1.5rem">
-      <div class="card-title">Difficulty</div>
-      <div class="diff-grid" id="diff">
-        <button class="diff-btn" data-val="Easy">Easy</button>
-        <button class="diff-btn active" data-val="Mixed">Mixed</button>
-        <button class="diff-btn" data-val="Hard">Hard</button>
-        <button class="diff-btn" data-val="Expert">Expert</button>
+      <div class="cl">Difficulty</div>
+      <div class="dg" id="diff">
+        <button class="db" data-val="Easy">Easy</button>
+        <button class="db on" data-val="Mixed">Mixed</button>
+        <button class="db" data-val="Hard">Hard</button>
+        <button class="db" data-val="Expert">Expert</button>
       </div>
     </div>
-
-    <hr class="divider">
-
+    <hr class="dv">
     <div>
-      <div class="card-title">Options</div>
-      <div class="toggle-list">
-        <div class="toggle-row">
-          <div class="toggle-text">
-            <div class="tl">Multiple choice answers</div>
-            <div class="ts">4 options per question — tap to reveal correct/wrong</div>
-          </div>
-          <label class="switch"><input type="checkbox" id="mcOpt" checked><span class="track"></span></label>
-        </div>
-        <div class="toggle-row">
-          <div class="toggle-text">
-            <div class="tl">Fun facts after each answer</div>
-            <div class="ts">A surprising fact revealed when you answer</div>
-          </div>
-          <label class="switch"><input type="checkbox" id="factOpt" checked><span class="track"></span></label>
-        </div>
-        <div class="toggle-row">
-          <div class="toggle-text">
-            <div class="tl">Tie-breaker round</div>
-            <div class="ts">One extra sudden-death bonus question</div>
-          </div>
-          <label class="switch"><input type="checkbox" id="tbOpt"><span class="track"></span></label>
-        </div>
-        <div class="toggle-row">
-          <div class="toggle-text">
-            <div class="tl">Live score tracker</div>
-            <div class="ts">Running score updates as you play</div>
-          </div>
-          <label class="switch"><input type="checkbox" id="scoreOpt" checked><span class="track"></span></label>
-        </div>
+      <div class="cl">Options</div>
+      <div class="tlist">
+        <div class="trow"><div><div class="tl">Multiple choice answers</div><div class="ts">4 options per question — tap to reveal correct/wrong</div></div><label class="sw"><input type="checkbox" id="mcOpt" checked><span class="tr"></span></label></div>
+        <div class="trow"><div><div class="tl">Fun facts after each answer</div><div class="ts">A surprising fact revealed when you answer</div></div><label class="sw"><input type="checkbox" id="factOpt" checked><span class="tr"></span></label></div>
+        <div class="trow"><div><div class="tl">Tie-breaker round</div><div class="ts">One extra sudden-death bonus question</div></div><label class="sw"><input type="checkbox" id="tbOpt"><span class="tr"></span></label></div>
+        <div class="trow"><div><div class="tl">Live score tracker</div><div class="ts">Running score updates as you play</div></div><label class="sw"><input type="checkbox" id="scoreOpt" checked><span class="tr"></span></label></div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /card -->
-
-  <button class="generate-btn" id="genBtn" onclick="generate()">
-    <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 01.75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 019.75 22.5a.75.75 0 01-.75-.75v-4.131A15.838 15.838 0 016.382 15H2.25a.75.75 0 01-.75-.75 6.75 6.75 0 017.815-6.666zM15 6.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z"/>
-      <path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z"/>
-    </svg>
+  <button class="gbtn" id="genBtn" onclick="doGen()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 01.75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 019.75 22.5a.75.75 0 01-.75-.75v-4.131A15.838 15.838 0 016.382 15H2.25a.75.75 0 01-.75-.75 6.75 6.75 0 017.815-6.666zM15 6.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z"/><path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z"/></svg>
     Begin the adventure
   </button>
-  <div class="loading-bar" id="loadingBar"><div class="loading-fill"></div></div>
-
-  <div id="quizOutput" class="quiz-output"></div>
-
-  <footer>
-    <span class="soot"></span><span class="soot"></span><span class="soot"></span>
-    &nbsp; SFQG · Powered by <a href="https://puter.com" target="_blank">Puter.js</a> · Free forever &nbsp;
-    <span class="soot"></span><span class="soot"></span><span class="soot"></span>
-  </footer>
-
-</div><!-- /wrapper -->
+  <div class="lbar" id="lbar"><div class="lfil"></div></div>
+  <div class="qout" id="qout"></div>
+  <footer>SFQG made by Gaz — Free for all forever ❤️</footer>
+</div>
 
 <script>
-// ── Fireflies ─────────────────────────────────────────────────────────────
-(function spawnFireflies() {
-  const container = document.getElementById('fireflies');
-  const colors = ['rgba(125,212,160,.7)', 'rgba(93,196,220,.7)', 'rgba(200,168,75,.6)'];
-  for (let i = 0; i < 28; i++) {
-    const f = document.createElement('div');
-    f.className = 'firefly';
-    f.style.cssText = [
-      'left:' + (Math.random() * 100) + '%',
-      'top:' + (Math.random() * 85) + '%',
-      '--dur:' + (6 + Math.random() * 10) + 's',
-      '--del:' + (Math.random() * 8) + 's',
-      '--tx:' + ((Math.random() - .5) * 80) + 'px',
-      '--ty:' + (-(20 + Math.random() * 80)) + 'px',
-      'background:' + colors[Math.floor(Math.random() * colors.length)],
-      'box-shadow: 0 0 6px 2px ' + colors[Math.floor(Math.random() * colors.length)],
-      'width:' + (2 + Math.random() * 2) + 'px',
-      'height:' + (2 + Math.random() * 2) + 'px'
-    ].join(';');
-    container.appendChild(f);
-  }
-})();
-
-// ── Quiz state ────────────────────────────────────────────────────────────
-let quizState = { questions: [], score: 0, answered: 0, trackScore: true };
-
-// ── Init ──────────────────────────────────────────────────────────────────
-(function init() {
-  document.querySelectorAll('#themes .chip').forEach(c => {
-    c.addEventListener('click', () => c.classList.toggle('active'));
-  });
-  document.querySelectorAll('#diff .diff-btn').forEach(b => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('#diff .diff-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-    });
-  });
-})();
-
-// ── Generate ──────────────────────────────────────────────────────────────
-async function generate() {
-  const themes = [...document.querySelectorAll('#themes .chip.active')].map(c => c.dataset.val);
-  if (!themes.length) { alert('Please select at least one theme.'); return; }
-
-  const numQ  = parseInt(document.getElementById('numQ').value, 10);
-  const minAge = parseInt(document.getElementById('minAge').value, 10);
-  const diff  = document.querySelector('#diff .diff-btn.active')?.dataset.val || 'Mixed';
-  const mc    = document.getElementById('mcOpt').checked;
-  const facts = document.getElementById('factOpt').checked;
-  const tb    = document.getElementById('tbOpt').checked;
-  const track = document.getElementById('scoreOpt').checked;
-
-  const btn = document.getElementById('genBtn');
-  const bar = document.getElementById('loadingBar');
-  btn.disabled = true;
-  btn.innerHTML = '<svg style="width:18px;height:18px;flex-shrink:0;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.75a7.25 7.25 0 100 14.5 7.25 7.25 0 000-14.5zM2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12z" opacity=".3"/><path d="M12 2.25a9.75 9.75 0 019.167 6.46.75.75 0 11-1.41.52A8.25 8.25 0 0012 3.75a.75.75 0 010-1.5z"/></svg> Conjuring your quiz…';
-  bar.classList.add('active');
-  document.getElementById('quizOutput').innerHTML = '';
-
-  const totalQ = numQ + (tb ? 1 : 0);
-
-  // Random seed injected so the model doesn't cache/repeat the same set
-  const seed = Math.random().toString(36).slice(2, 8).toUpperCase();
-
-  const difficultyGuide = {
-    'Easy':   'Questions should be gentle warm-ups — well-known facts most primary school children would know. Still make them interesting, not completely obvious.',
-    'Mixed':  'Roughly one third easy, one third medium, one third genuinely hard. Hard questions should stump most adults. Vary the difficulty unpredictably throughout.',
-    'Hard':   'Most questions should challenge adults. Children may get a few but should find it tough. Require specific knowledge, dates, names, or science facts.',
-    'Expert': 'University-level difficulty. Questions should stump almost everyone. Highly specific facts, obscure history, advanced science, precise statistics. Only a genuine expert should score above 50%.'
-  }[diff] || '';
-
-  const prompt = `You are a world-class pub quiz master writing for the Sutton Family Quiz. Session ID: ${seed} — use this to generate a COMPLETELY FRESH, UNIQUE set of questions unlike any previous session.
-
-DIFFICULTY: ${diff}
-${difficultyGuide}
-
-THEMES: ${themes.join(', ')}
-Youngest player age: ${minAge} — questions must be UNDERSTANDABLE to this age (simple words, no jargon) but difficulty should still match the setting above. A hard question can still be phrased simply.
-Total questions needed: exactly ${totalQ}
-Question style: ${mc ? 'Multiple choice — 4 options per question' : 'Open answer — one correct short answer'}
-${tb ? `Last question (number ${totalQ}): set "tieBreaker": true, make it the hardest question of the set` : ''}
-${facts ? 'Fun fact: include one after each question — surprising, child-friendly, 1-2 sentences' : ''}
-
-STRICT RULES — violating any of these makes the quiz worthless:
-1. ZERO repeated questions, topics, or answers across the entire set. Every question must be about something genuinely different.
-2. Spread questions evenly across ALL selected themes — do not cluster in one theme.
-3. ${diff === 'Easy' ? 'Keep questions approachable but not insultingly obvious.' : diff === 'Expert' ? 'Be genuinely brutal. Vague or common-knowledge questions are NOT acceptable at Expert level.' : 'Vary difficulty — easy, medium, and hard questions must all appear.'}
-4. Wrong answers must be plausible enough to cause real doubt — not silly distractors.
-5. Avoid questions about: colours of things, counting legs on animals, basic addition, or any question a 5-year-old could answer by guessing.
-6. Use a wide variety of question FORMATS: "Which year...", "Who was the first...", "What is the chemical symbol for...", "In which country...", "How many...", "What does X stand for...", "Which of these is NOT...", etc.
-
-Return ONLY valid JSON — no markdown fences, no backticks, no preamble:
-
-{
-  "questions": [
-    {
-      "num": 1,
-      "theme": "Exact Theme Name",
-      "question": "Question text?",
-      ${mc
-        ? '"options": ["A. First option", "B. Second option", "C. Third option", "D. Fourth option"], "correct": "A",'
-        : '"answer": "Precise correct answer",'
-      }
-      "funFact": "${facts ? 'Interesting fact here.' : ''}",
-      "tieBreaker": false
-    }
-  ]
-}
-
-"correct" must be exactly one of: A B C D — nothing else. Escape internal quotes with \\".`;
-
-  try {
-    // Wait for puter.js to finish loading
-    await window._puterLoaded;
-
-    // Extra guard — wait up to 8s for the puter global to appear
-    const deadline = Date.now() + 8000;
-    while (typeof puter === 'undefined' || typeof puter.ai === 'undefined') {
-      if (Date.now() > deadline) throw new Error('AI service took too long to load. Please refresh the page and try again.');
-      await new Promise(r => setTimeout(r, 150));
-    }
-
-    const response = await puter.ai.chat(prompt, { model: 'gpt-4o-mini' });
-    const raw = typeof response === 'string' ? response
-      : (response?.message?.content ?? response?.text ?? JSON.stringify(response));
-    if (!raw) throw new Error('Empty response — please try again.');
-    const cleaned = raw.replace(/^```(?:json)?\s*/m, '').replace(/\s*```\s*$/m, '').trim();
-    const quiz = JSON.parse(cleaned);
-    if (!quiz.questions || !quiz.questions.length) throw new Error('No questions found in response.');
-
-    quizState = { questions: quiz.questions, score: 0, answered: 0, trackScore: track };
-    renderQuiz(mc, facts, track);
-
-  } catch (e) {
-    document.getElementById('quizOutput').innerHTML =
-      `<div class="error-msg"><strong>Something went wrong:</strong> ${escHtml(e.message)}<br><br>This is usually temporary — please wait a moment and try again.</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 01.75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 019.75 22.5a.75.75 0 01-.75-.75v-4.131A15.838 15.838 0 016.382 15H2.25a.75.75 0 01-.75-.75 6.75 6.75 0 017.815-6.666zM15 6.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z"/><path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z"/></svg> Begin the adventure';
-    bar.classList.remove('active');
-  }
-}
-
-// ── Render quiz ───────────────────────────────────────────────────────────
-function renderQuiz(mc, facts, track) {
-  const qs = quizState.questions;
-  const total = qs.length;
-  let html = '<div id="quizWrap">';
-
-  html += `<div class="quiz-header">
-    <div>
-      <div class="quiz-title">✦ Sutton Family Quiz ✦</div>
-      <div class="quiz-meta">${total} question${total !== 1 ? 's' : ''} · may the best player win</div>
-    </div>
-    ${track && mc ? `<div class="score-display"><div class="s-num" id="scoreNum">0/${total}</div><div class="s-label">Score</div></div>` : ''}
-  </div>`;
-
-  qs.forEach((q, i) => {
-    const tbBadge = q.tieBreaker ? '<span class="tb-badge">✦ Tie-breaker</span>' : '';
-    html += `<div class="q-card" id="qcard${i}">
-      <div class="q-meta">
-        <span class="q-num-badge">${q.num}</span>
-        <span class="q-theme-badge">${escHtml(q.theme)}</span>
-        ${tbBadge}
-      </div>
-      <div class="q-text">${escHtml(q.question)}</div>`;
-
-    if (mc && q.options && q.options.length) {
-      html += `<div class="answers-grid" id="ans${i}">`;
-      q.options.forEach((opt, oi) => {
-        const letter = String.fromCharCode(65 + oi);
-        html += `<button class="ans-btn" onclick="pickAnswer(${i},'${letter}',${track})" id="ab${i}_${letter}">
-          <span class="letter">${letter}</span>${escHtml(opt.replace(/^[A-D]\.\s*/, ''))}
-        </button>`;
+// ── Forest (canvas) ──────────────────────────────────────────────────────
+(function(){
+  const cv=document.getElementById('fc'), cx=cv.getContext('2d');
+  let W,H,trees=[],t=0;
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;buildTrees();}
+  function buildTrees(){
+    trees=[];
+    [{n:14,yb:.72,hN:.28,hX:.34,rN:52,rX:72,col:'#060E07',sp:.18,am:.012},
+     {n:12,yb:.78,hN:.21,hX:.27,rN:42,rX:60,col:'#0A1609',sp:.28,am:.016},
+     {n:10,yb:.84,hN:.16,hX:.22,rN:32,rX:50,col:'#0E1E10',sp:.40,am:.022}
+    ].forEach((l,li)=>{
+      for(let i=0;i<l.n;i++) trees.push({
+        x:(i/l.n+li*.07)*W+(Math.random()-.5)*(W/l.n*.8),
+        yb:l.yb, h:l.hN+Math.random()*(l.hX-l.hN),
+        r:l.rN+Math.random()*(l.rX-l.rN), col:l.col,
+        sp:l.sp+Math.random()*.12, am:l.am+Math.random()*.006,
+        ph:Math.random()*Math.PI*2, layer:li
       });
-      html += '</div>';
-    } else if (!mc && q.answer) {
-      html += `<button class="open-answer-btn" id="openBtn${i}" onclick="revealOpen(${i})">Tap to reveal the answer</button>`;
-    }
-
-    if (facts && q.funFact) {
-      html += `<div class="fun-fact" id="ff${i}"><strong>Did you know?</strong>${escHtml(q.funFact)}</div>`;
-    }
-    html += '</div>';
-  });
-
-  html += `<button class="regen-btn" onclick="generate()">✦ Generate another quiz with the same settings</button>`;
-  html += '</div>';
-
-  document.getElementById('quizOutput').innerHTML = html;
-  document.getElementById('quizOutput').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-// ── Answer logic ──────────────────────────────────────────────────────────
-function pickAnswer(qi, chosen, track) {
-  const ansDiv = document.getElementById(`ans${qi}`);
-  if (!ansDiv || ansDiv.dataset.done) return;
-  ansDiv.dataset.done = '1';
-
-  const q = quizState.questions[qi];
-  const correct = q.correct;
-  let gotIt = false;
-
-  ['A','B','C','D'].forEach(letter => {
-    const btn = document.getElementById(`ab${qi}_${letter}`);
-    if (!btn) return;
-    btn.disabled = true;
-    if (letter === correct) btn.classList.add('reveal-correct');
-    if (letter === chosen && chosen !== correct) btn.classList.add('wrong');
-    if (letter === chosen && chosen === correct) gotIt = true;
-  });
-
-  if (track) {
-    quizState.answered++;
-    if (gotIt) quizState.score++;
-    const scoreEl = document.getElementById('scoreNum');
-    if (scoreEl) scoreEl.textContent = `${quizState.score}/${quizState.questions.length}`;
-    if (quizState.answered === quizState.questions.length) showFinalScore();
+    });
+    trees.sort((a,b)=>a.layer-b.layer);
   }
+  function drawTree(tr){
+    const base=tr.yb*H, h=tr.h*H, sway=Math.sin(t*tr.sp+tr.ph)*tr.am;
+    cx.save(); cx.translate(tr.x,base); cx.rotate(sway);
+    cx.fillStyle=tr.col;
+    const tw=Math.max(3,tr.r*.11);
+    cx.fillRect(-tw/2,0,tw,h*.35);
+    for(let i=0;i<4;i++){
+      const f=i/4;
+      cx.beginPath();
+      cx.ellipse(0,-h*(.08+f*.26),tr.r*(1-f*.55),h*(.11+f*.55)/2,0,0,Math.PI*2);
+      cx.fill();
+    }
+    cx.restore();
+  }
+  function frame(){t+=.016;cx.clearRect(0,0,W,H);cx.fillStyle='#040B04';cx.fillRect(0,H*.87,W,H*.13);trees.forEach(drawTree);requestAnimationFrame(frame);}
+  addEventListener('resize',resize);resize();frame();
+})();
 
-  const ff = document.getElementById(`ff${qi}`);
-  if (ff) ff.classList.add('visible');
+// ── Fireflies ────────────────────────────────────────────────────────────
+(function(){
+  const cols=['rgba(125,212,160,.75)','rgba(93,196,220,.7)','rgba(200,168,75,.65)'];
+  for(let i=0;i<30;i++){
+    const e=document.createElement('div'); e.className='ff';
+    const c=cols[i%3], sz=2+Math.random()*2.5;
+    e.style.cssText=`left:${Math.random()*100}%;top:${10+Math.random()*75}%;width:${sz}px;height:${sz}px;background:${c};box-shadow:0 0 6px 2px ${c};--d:${6+Math.random()*10}s;--dl:${Math.random()*9}s;--tx:${(Math.random()-.5)*90}px;--ty:${-(25+Math.random()*85)}px;`;
+    document.body.appendChild(e);
+  }
+})();
+
+// ── Falling leaves ───────────────────────────────────────────────────────
+(function(){
+  const lc=['#162E1A','#1A3C20','#122614','#1E4226','#102010'];
+  for(let i=0;i<16;i++){
+    const e=document.createElement('div'); e.className='lf';
+    const sz=7+Math.random()*6;
+    e.style.cssText=`left:${Math.random()*108-4}%;top:-20px;width:${sz}px;height:${sz*.6}px;background:${lc[i%5]};--ld:${11+Math.random()*12}s;--ldl:${Math.random()*18}s;--lx:${(Math.random()-.4)*130}px;--lr:${Math.random()>.5?'':'-'}${200+Math.random()*400}deg;`;
+    document.body.appendChild(e);
+  }
+})();
+
+// ── Puter loader ─────────────────────────────────────────────────────────
+window._pr=new Promise((res,rej)=>{
+  const s=document.createElement('script');
+  s.src='https://js.puter.com/v2/';
+  s.onload=()=>{
+    const end=Date.now()+10000;
+    const id=setInterval(()=>{
+      if(typeof puter!=='undefined'&&puter.ai){clearInterval(id);res();}
+      if(Date.now()>end){clearInterval(id);rej(new Error('AI service timed out — please refresh.'));}
+    },100);
+  };
+  s.onerror=()=>rej(new Error('Could not load AI — check your internet and refresh.'));
+  document.head.appendChild(s);
+});
+
+// ── Controls ─────────────────────────────────────────────────────────────
+document.querySelectorAll('#themes .chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('on')));
+document.querySelectorAll('#diff .db').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#diff .db').forEach(x=>x.classList.remove('on'));b.classList.add('on');}));
+
+// ── State ────────────────────────────────────────────────────────────────
+let QS={questions:[],score:0,answered:0,total:0,track:true};
+
+// ── Generate ─────────────────────────────────────────────────────────────
+async function doGen(){
+  const themes=[...document.querySelectorAll('#themes .chip.on')].map(c=>c.dataset.val);
+  if(!themes.length){alert('Please select at least one theme.');return;}
+  const numQ=parseInt(document.getElementById('numQ').value,10);
+  const minAge=parseInt(document.getElementById('minAge').value,10);
+  const diff=document.querySelector('#diff .db.on')?.dataset.val||'Mixed';
+  const mc=document.getElementById('mcOpt').checked;
+  const facts=document.getElementById('factOpt').checked;
+  const tb=document.getElementById('tbOpt').checked;
+  const track=document.getElementById('scoreOpt').checked;
+  const totalQ=numQ+(tb?1:0);
+  const btn=document.getElementById('genBtn'), bar=document.getElementById('lbar');
+  btn.disabled=true;
+  btn.innerHTML='<svg style="width:20px;height:20px;flex-shrink:0;animation:spin 1s linear infinite" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.75a7.25 7.25 0 100 14.5A7.25 7.25 0 0012 4.75z" opacity=".3"/><path d="M12 2.25A9.75 9.75 0 0121.167 8.71a.75.75 0 11-1.41.52A8.25 8.25 0 0012 3.75a.75.75 0 010-1.5z"/></svg> Conjuring your quiz…';
+  bar.classList.add('on');
+  document.getElementById('qout').innerHTML='';
+  const seed=Math.random().toString(36).slice(2,8).toUpperCase();
+  const dg={Easy:'Warm-ups — approachable, not trivial.',Mixed:'One third easy, one third medium, one third adult-stumping.',Hard:'Mostly hard adult-level — specific facts, dates, names.',Expert:'Brutal university-level — obscure history, advanced science.'}[diff]||'';
+  const prompt=`You are a world-class quiz master. Session:${seed}. Make exactly ${totalQ} UNIQUE questions for the Sutton Family Quiz.
+DIFFICULTY:${diff} — ${dg}
+THEMES:${themes.join(', ')}
+YOUNGEST PLAYER:${minAge} yrs — simple wording but difficulty matches level.
+FORMAT:${mc?'Multiple choice, 4 options':'Open answer, one correct answer'}
+${tb?`Q${totalQ} is tie-breaker: tieBreaker:true, make it hardest.`:''}
+${facts?'Include funFact per question: 1-2 sentences, surprising, child-friendly.':''}
+RULES: No repeated topics. Spread evenly across themes. Plausible wrong options. No trivially easy questions. Vary formats ("Which year","Who was first","What does X stand for","In which country","Which is NOT", etc).
+Return ONLY valid JSON — no markdown, no fences:
+{"questions":[{"num":1,"theme":"Name","question":"Q?",${mc?'"options":["A. o","B. o","C. o","D. o"],"correct":"A",':'"answer":"ans",'},"funFact":"${facts?'fact':''}","tieBreaker":false}]}
+"correct" = exactly A B C or D. Escape inner quotes with \\".`;
+  try{
+    await window._pr;
+    const resp=await puter.ai.chat(prompt,{model:'gpt-4o-mini',stream:false});
+    // Extract text robustly
+    let raw='';
+    if(typeof resp==='string') raw=resp;
+    else if(resp?.message?.content!=null){const c=resp.message.content;raw=typeof c==='string'?c:Array.isArray(c)?c.map(b=>b.text||b.content||'').join(''):String(c);}
+    else if(resp?.text) raw=resp.text;
+    else if(resp?.content) raw=typeof resp.content==='string'?resp.content:JSON.stringify(resp.content);
+    else raw=JSON.stringify(resp);
+    if(!raw||raw==='undefined'||raw==='null') throw new Error('Empty AI response — please try again.');
+    raw=raw.replace(/^```(?:json)?\s*/im,'').replace(/\s*```\s*$/im,'').trim();
+    const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+    if(s<0||e<0) throw new Error('AI returned unexpected format — please try again.');
+    const quiz=JSON.parse(raw.slice(s,e+1));
+    if(!quiz.questions?.length) throw new Error('No questions returned — please try again.');
+    QS={questions:quiz.questions,score:0,answered:0,total:quiz.questions.length,track};
+    renderQuiz(mc,facts,track);
+  }catch(err){
+    document.getElementById('qout').innerHTML=`<div class="err"><strong>Something went wrong:</strong> ${esc(err.message)}</div>`;
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 01.75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 019.75 22.5a.75.75 0 01-.75-.75v-4.131A15.838 15.838 0 016.382 15H2.25a.75.75 0 01-.75-.75 6.75 6.75 0 017.815-6.666zM15 6.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z"/><path d="M5.26 17.242a.75.75 0 10-.897-1.203 5.243 5.243 0 00-2.05 5.022.75.75 0 00.625.627 5.243 5.243 0 005.022-2.051.75.75 0 10-1.202-.897 3.744 3.744 0 01-3.008 1.51c0-1.23.592-2.323 1.51-3.008z"/></svg> Begin the adventure';
+    bar.classList.remove('on');
+  }
 }
 
-function revealOpen(qi) {
-  const q = quizState.questions[qi];
-  const btn = document.getElementById(`openBtn${qi}`);
-  if (!btn || btn.dataset.done) return;
-  btn.dataset.done = '1';
-  btn.outerHTML = `<div class="open-answer-revealed">✦ Answer: ${escHtml(q.answer)}</div>`;
-  const ff = document.getElementById(`ff${qi}`);
-  if (ff) ff.classList.add('visible');
+// ── Render ───────────────────────────────────────────────────────────────
+function renderQuiz(mc,facts,track){
+  const {questions,total}=QS;
+  let h='<div id="qwrap">';
+  h+=`<div class="qhdr"><div><div class="qtit">✦ Sutton Family Quiz ✦</div><div class="qmeta">${total} question${total!==1?'s':''} · may the best player win</div></div>${track&&mc?`<div class="scbox"><div class="scn" id="scn">0/${total}</div><div class="scl">Score</div></div>`:''}</div>`;
+  questions.forEach((q,i)=>{
+    const tb=q.tieBreaker?'<span class="tbadge">✦ Tie-breaker</span>':'';
+    h+=`<div class="qcard"><div class="qm"><span class="qnb">${q.num}</span><span class="qth">${esc(q.theme||'')}</span>${tb}</div><div class="qtxt">${esc(q.question)}</div>`;
+    if(mc&&q.options?.length){
+      h+=`<div class="agrid" id="ag${i}">`;
+      q.options.forEach((o,oi)=>{const L=String.fromCharCode(65+oi);h+=`<button class="abtn" id="ab${i}${L}" onclick="pick(${i},'${L}')"><span class="lt">${L}</span>${esc(o.replace(/^[A-D]\.\s*/,''))}</button>`;});
+      h+='</div>';
+    }else if(!mc&&q.answer){
+      h+=`<button class="oabtn" id="oa${i}" onclick="reveal(${i})">Tap to reveal the answer</button>`;
+    }
+    if(facts&&q.funFact) h+=`<div class="ffact" id="ff${i}"><strong>Did you know?</strong>${esc(q.funFact)}</div>`;
+    h+='</div>';
+  });
+  h+=`<button class="rbtn" onclick="doGen()">✦ Generate another quiz with the same settings</button>`;
+  // Totoro reveal
+  h+=`<div class="trev" id="trev"><div class="trlbl" id="trlbl">Answer questions to reveal Totoro…</div>
+  <svg id="tsvg" viewBox="0 0 200 250" width="190" xmlns="http://www.w3.org/2000/svg">
+    <g id="tp0" class="tp"><ellipse cx="100" cy="245" rx="62" ry="8" fill="#030A03" opacity=".8"/></g>
+    <g id="tp1" class="tp"><ellipse cx="74" cy="230" rx="22" ry="12" fill="#5A8A5A"/><ellipse cx="126" cy="230" rx="22" ry="12" fill="#5A8A5A"/><line x1="60" y1="235" x2="65" y2="240" stroke="#3A6A3A" stroke-width="1.8"/><line x1="67" y1="237" x2="67" y2="243" stroke="#3A6A3A" stroke-width="1.8"/><line x1="74" y1="237" x2="71" y2="242" stroke="#3A6A3A" stroke-width="1.8"/><line x1="113" y1="235" x2="118" y2="240" stroke="#3A6A3A" stroke-width="1.8"/><line x1="120" y1="237" x2="120" y2="243" stroke="#3A6A3A" stroke-width="1.8"/><line x1="127" y1="237" x2="124" y2="242" stroke="#3A6A3A" stroke-width="1.8"/></g>
+    <g id="tp2" class="tp"><ellipse cx="100" cy="168" rx="64" ry="78" fill="#6A9A6A"/></g>
+    <g id="tp3" class="tp"><ellipse cx="100" cy="178" rx="42" ry="58" fill="#9EC89E"/></g>
+    <g id="tp4" class="tp" opacity=".7"><ellipse cx="88" cy="165" rx="8" ry="10" fill="#4A7A4A"/><ellipse cx="100" cy="157" rx="6" ry="8" fill="#4A7A4A"/><ellipse cx="112" cy="165" rx="8" ry="10" fill="#4A7A4A"/><ellipse cx="94" cy="178" rx="6" ry="7" fill="#4A7A4A"/><ellipse cx="106" cy="178" rx="6" ry="7" fill="#4A7A4A"/></g>
+    <g id="tp5" class="tp"><ellipse cx="44" cy="152" rx="14" ry="30" fill="#6A9A6A" transform="rotate(-18 44 152)"/><ellipse cx="156" cy="152" rx="14" ry="30" fill="#6A9A6A" transform="rotate(18 156 152)"/><ellipse cx="36" cy="173" rx="14" ry="10" fill="#6A9A6A"/><ellipse cx="164" cy="173" rx="14" ry="10" fill="#6A9A6A"/></g>
+    <g id="tp6" class="tp"><circle cx="100" cy="88" r="56" fill="#7AAA7A"/></g>
+    <g id="tp7" class="tp"><ellipse cx="60" cy="33" rx="19" ry="32" fill="#7AAA7A" transform="rotate(-14 60 33)"/><ellipse cx="140" cy="33" rx="19" ry="32" fill="#7AAA7A" transform="rotate(14 140 33)"/><ellipse cx="60" cy="38" rx="10" ry="19" fill="#9EC89E" transform="rotate(-14 60 38)" opacity=".6"/><ellipse cx="140" cy="38" rx="10" ry="19" fill="#9EC89E" transform="rotate(14 140 38)" opacity=".6"/></g>
+    <g id="tp8" class="tp"><circle cx="82" cy="88" r="13" fill="#E4F2E4"/><circle cx="118" cy="88" r="13" fill="#E4F2E4"/><circle cx="84" cy="89" r="7.5" fill="#1A2A1A"/><circle cx="120" cy="89" r="7.5" fill="#1A2A1A"/><circle cx="86" cy="86" r="2.5" fill="#fff"/><circle cx="122" cy="86" r="2.5" fill="#fff"/><ellipse cx="100" cy="100" rx="4.5" ry="2.8" fill="#3A6A3A"/><path d="M89 107Q100 113 111 107" stroke="#3A6A3A" stroke-width="1.8" fill="none"/></g>
+    <g id="tp9" class="tp"><line x1="36" y1="96" x2="80" y2="100" stroke="#3A6A3A" stroke-width="1.4"/><line x1="34" y1="104" x2="80" y2="105" stroke="#3A6A3A" stroke-width="1.4"/><line x1="120" y1="100" x2="164" y2="96" stroke="#3A6A3A" stroke-width="1.4"/><line x1="120" y1="105" x2="166" y2="104" stroke="#3A6A3A" stroke-width="1.4"/></g>
+  </svg></div>`;
+  h+='</div>';
+  document.getElementById('qout').innerHTML=h;
+  document.getElementById('qout').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function showFinalScore() {
-  const pct = Math.round((quizState.score / quizState.questions.length) * 100);
-  const msg = pct === 100 ? 'Perfect — worthy of the forest spirits!' :
-              pct >= 80  ? 'Magnificent — Totoro would be proud!' :
-              pct >= 60  ? 'Well done — Ponyo is cheering for you!' :
-              pct >= 40  ? 'Good effort — keep adventuring!' :
-              'The soot sprites are rooting for you next time!';
-  const card = document.createElement('div');
-  card.className = 'final-score-card';
-  card.innerHTML = `<h3>Adventure complete!</h3>
-    <div class="big-score">${quizState.score}/${quizState.questions.length}</div>
-    <p class="result-msg">${msg} (${pct}%)</p>`;
-  document.getElementById('quizWrap').appendChild(card);
-  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+// ── Totoro reveal ────────────────────────────────────────────────────────
+function showTotoro(){
+  const wrap=document.getElementById('trev'),lbl=document.getElementById('trlbl'),svg=document.getElementById('tsvg');
+  if(!wrap)return;
+  wrap.classList.add('on');
+  const show=Math.min(10,Math.ceil((QS.answered/QS.total)*10));
+  for(let i=0;i<show;i++){const p=document.getElementById('tp'+i);if(p)setTimeout(()=>p.classList.add('on'),i*100);}
+  if(lbl){
+    if(QS.answered>=QS.total){lbl.textContent='✦ Totoro has arrived! ✦';lbl.classList.add('done');if(svg)svg.classList.add('tglowing');}
+    else lbl.textContent=`Totoro ${Math.round((QS.answered/QS.total)*100)}% revealed…`;
+  }
 }
 
-function escHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// ── Answer handlers ──────────────────────────────────────────────────────
+function pick(qi,chosen){
+  const grid=document.getElementById('ag'+qi);
+  if(!grid||grid.dataset.done)return;
+  grid.dataset.done='1';
+  const q=QS.questions[qi];
+  const correct=(q.correct||'').toUpperCase().trim();
+  let got=false;
+  ['A','B','C','D'].forEach(L=>{
+    const b=document.getElementById('ab'+qi+L);
+    if(!b)return;
+    b.disabled=true;
+    if(L===correct) b.classList.add('corr');
+    if(L===chosen&&L!==correct) b.classList.add('wrng');
+    if(L===chosen&&L===correct) got=true;
+  });
+  QS.answered++;
+  if(QS.track&&got) QS.score++;
+  if(QS.track){const sc=document.getElementById('scn');if(sc)sc.textContent=QS.score+'/'+QS.total;}
+  const ff=document.getElementById('ff'+qi);if(ff)ff.classList.add('on');
+  showTotoro();
+  if(QS.track&&QS.answered===QS.total) setTimeout(finalScore,600);
 }
+
+function reveal(qi){
+  const btn=document.getElementById('oa'+qi);
+  if(!btn||btn.dataset.done)return;
+  btn.dataset.done='1';
+  const q=QS.questions[qi];
+  const d=document.createElement('div');d.className='oarev';d.textContent='✦ Answer: '+(q.answer||'');
+  btn.replaceWith(d);
+  QS.answered++;
+  const ff=document.getElementById('ff'+qi);if(ff)ff.classList.add('on');
+  showTotoro();
+}
+
+// ── Final score ──────────────────────────────────────────────────────────
+function finalScore(){
+  const pct=Math.round((QS.score/QS.total)*100);
+  const msg=pct===100?'Perfect — worthy of the forest spirits!':pct>=80?'Magnificent — Totoro would be proud!':pct>=60?'Well done — Ponyo is cheering for you!':pct>=40?'Good effort — keep adventuring!':'The soot sprites are rooting for you next time!';
+  const c=document.createElement('div');c.className='fsc';
+  c.innerHTML=`<h3>Adventure complete!</h3><div class="bsc">${QS.score}/${QS.total}</div><p class="fmsg">${msg} (${pct}%)</p>`;
+  const w=document.getElementById('qwrap');if(w){w.appendChild(c);c.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 </body>
 </html>
